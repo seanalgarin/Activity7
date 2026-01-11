@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quick API Test</title>
+</head>
+<body>
+    <h1>API Test</h1>
+    <button onclick="testAPI()">Test API Connection</button>
+    <div id="result"></div>
+
+    <script>
+        async function testAPI() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                // Test GET
+                const response = await fetch('http://localhost:3000/users');
+                const data = await response.json();
+                resultDiv.innerHTML = `<pre>SUCCESS!\nStatus: ${response.status}\nUsers: ${JSON.stringify(data, null, 2)}</pre>`;
+                
+                // Test POST
+                const postResponse = await fetch('http://localhost:3000/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: 'Test', email: 'test@test.com' })
+                });
+                const postData = await postResponse.json();
+                resultDiv.innerHTML += `<pre>\nPOST SUCCESS!\nStatus: ${postResponse.status}\nCreated: ${JSON.stringify(postData, null, 2)}</pre>`;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<pre style="color: red;">ERROR: ${error.message}\n${error.stack}</pre>`;
+            }
+        }
+    </script>
+</body>
+</html>

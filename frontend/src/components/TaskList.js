@@ -1,0 +1,201 @@
+import React, { useState, useEffect } from 'react';
+import api from '../services/api';
+import TaskForm from './TaskForm';
+
+function TaskList() {
+  const [tasks, setTasks] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [tasksRes, projectsRes, usersRes] = await Promise.all([
+        api.getTasks(),
+        api.getProjects(),
+        api.getUsers(),
+      ]);
+      setTasks(tasksRes.data);
+      setProjects(projectsRes.data);
+      setUsers(usersRes.data);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      alert('Failed to load tasks');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this task?')) {
+      try {
+        await api.deleteTask(id);
+        setTasks(tasks.filter((t) => t.id !== id));
+      } catch (error) {
+        console.error('Error deleting task:', error);
+        alert('Failed to delete task');
+      }
+    }
+  };
+
+  const handleEdit = (task) => {
+    setEditingTask(task);
+    setShowForm(true);
+  };
+
+  const handleFormClose = () => {
+    setShowForm(false);
+    setEditingTask(null);
+    fetchData();
+  };
+
+  const getStatusClass = (status) => {
+    switch (status) {
+      case 'completed':
+        return 'status-completed';
+      case 'in_progress':
+        return 'status-in-progress';
+      case 'pending':
+      default:
+        return 'status-pending';
+    }
+  };
+
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case 'completed':
+        return '✅ Completed';
+      case 'in_progress':
+        return '🔄 In Progress';
+      case 'pending':
+      default:
+        return '⏳ Pending';
+    }
+  };
+
+  const isOverdue = (deadline) => {
+    return new Date(deadline) < new Date();
+  };
+
+  const formatDeadline = (deadline) => {
+    const date = new Date(deadline);
+    const now = new Date();
+    const diffTime = date - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+      return `Overdue by ${Math.abs(diffDays)} days`;
+    } else if (diffDays === 0) {
+      return 'Due today';
+    } else if (diffDays === 1) {
+      return 'Due tomorrow';
+    } else {
+      return `Due in ${diffDays} days`;
+    }
+  };
+
+  if (loading) {
+    return <div className="loading">Loading tasks...</div>;
+  }
+
+  return (
+    <div className="tasks-page">
+      <div className="page-header">
+        <h2>Tasks</h2>
+        <button className="btn-primary" onClick={() => setShowForm(true)}>
+          + New Task
+        </button>
+      </div>
+
+      {showForm && (
+        <TaskForm
+          task={editingTask}
+          projects={projects}
+          users={users}
+          onClose={handleFormClose}
+        />
+      )}
+
+      {tasks.length === 0 ? (
+        <div className="empty-state">
+          <p>No tasks yet. Create your first task!</p>
+        </div>
+      ) : (
+        <div className="task-list">
+          {tasks.map((task) => {
+            const overdue = isOverdue(task.deadline) && task.status !== 'completed';
+
+            return (
+              <div
+                key={task.id}
+                className={`task-card ${overdue ? 'task-overdue' : ''}`}
+              >
+                <div className="task-header">
+                  <h3>{task.title}</h3>
+                  <div className="task-actions">
+                    <button
+                      className="btn-edit"
+                      onClick={() => handleEdit(task)}
+                      title="Edit task"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      className="btn-delete"
+                      onClick={() => handleDelete(task.id)}
+                      title="Delete task"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+
+                {task.description && (
+                  <p className="task-description">{task.description}</p>
+                )}
+
+                <div className="task-meta">
+                  <span className={`task-status ${getStatusClass(task.status)}`}>
+                    {getStatusLabel(task.status)}
+                  </span>
+
+                  <span className={`task-deadline ${overdue ? 'deadline-overdue' : ''}`}>
+                    📅 {formatDeadline(task.deadline)}
+                  </span>
+                </div>
+
+                <div className="task-details">
+                  <span className="task-project">
+                    📁 {task.project?.name || 'No project'}
+                  </span>
+                  {task.assignedUser && (
+                    <span className="task-assignee">
+                      👤 {task.assignedUser.name}
+                    </span>
+                  )}
+                </div>
+
+                <div className="task-date">
+                  {new Date(task.deadline).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default TaskList;
