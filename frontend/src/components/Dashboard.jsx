@@ -46,8 +46,8 @@ function Dashboard() {
       setUsers(usersRes.data);
     } catch (error) {
       console.error('Error fetching data:', error);
-      const errorMessage = error.code === 'ERR_NETWORK' 
-        ? 'Unable to connect to server. Please ensure the backend is running on port 3000.'
+      const errorMessage = error.code === 'ERR_NETWORK'
+        ? 'Unable to connect to server. Please ensure the backend is running.'
         : 'Failed to load data. Please try again.';
       showAlert(errorMessage, 'Error Loading Data');
     } finally {

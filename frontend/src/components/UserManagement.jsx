@@ -114,7 +114,7 @@ function UserManagement({ users, onUpdate }) {
         status: error.response?.status,
         data: error.response?.data
       });
-      const errorMessage = error.response?.data?.message 
+      const errorMessage = error.response?.data?.message
         || (error.code === 'ERR_NETWORK' ? 'Unable to connect to server. Please ensure the backend is running.'
         : 'Failed to save user. Please try again.');
       showAlert(errorMessage, 'Error');
