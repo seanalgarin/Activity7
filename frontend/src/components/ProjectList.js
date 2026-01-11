@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import ProjectForm from './ProjectForm';
+import Modal from './Modal';
 
 function ProjectList() {
   const [projects, setProjects] = useState([]);
@@ -8,6 +9,19 @@ function ProjectList() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
+  const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null });
+
+  const showAlert = (message, title = 'Message') => {
+    setModal({ isOpen: true, title, message, type: 'alert', onConfirm: null });
+  };
+
+  const showConfirm = (message, onConfirm, title = 'Confirm') => {
+    setModal({ isOpen: true, title, message, type: 'confirm', onConfirm });
+  };
+
+  const closeModal = () => {
+    setModal({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null });
+  };
 
   useEffect(() => {
     fetchData();
@@ -24,22 +38,27 @@ function ProjectList() {
       setUsers(usersRes.data);
     } catch (error) {
       console.error('Error fetching data:', error);
-      alert('Failed to load projects');
+      showAlert('Failed to load projects', 'Error');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this project?')) {
-      try {
-        await api.deleteProject(id);
-        setProjects(projects.filter((p) => p.id !== id));
-      } catch (error) {
-        console.error('Error deleting project:', error);
-        alert('Failed to delete project');
-      }
-    }
+    showConfirm(
+      'Are you sure you want to delete this project?',
+      async () => {
+        closeModal();
+        try {
+          await api.deleteProject(id);
+          setProjects(projects.filter((p) => p.id !== id));
+        } catch (error) {
+          console.error('Error deleting project:', error);
+          showAlert('Failed to delete project', 'Error');
+        }
+      },
+      'Delete Project'
+    );
   };
 
   const handleEdit = (project) => {
@@ -122,6 +141,15 @@ function ProjectList() {
           ))}
         </div>
       )}
+
+      <Modal
+        isOpen={modal.isOpen}
+        onClose={closeModal}
+        onConfirm={modal.onConfirm}
+        title={modal.title}
+        message={modal.message}
+        type={modal.type}
+      />
     </div>
   );
 }
