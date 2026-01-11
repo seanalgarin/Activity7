@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import TaskForm from './TaskForm';
+import Modal from './Modal';
 
 function TaskList() {
   const [tasks, setTasks] = useState([]);
@@ -9,6 +10,19 @@ function TaskList() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
+  const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null });
+
+  const showAlert = (message, title = 'Message') => {
+    setModal({ isOpen: true, title, message, type: 'alert', onConfirm: null });
+  };
+
+  const showConfirm = (message, onConfirm, title = 'Confirm') => {
+    setModal({ isOpen: true, title, message, type: 'confirm', onConfirm });
+  };
+
+  const closeModal = () => {
+    setModal({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null });
+  };
 
   useEffect(() => {
     fetchData();
@@ -27,22 +41,27 @@ function TaskList() {
       setUsers(usersRes.data);
     } catch (error) {
       console.error('Error fetching data:', error);
-      alert('Failed to load tasks');
+      showAlert('Failed to load tasks', 'Error');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this task?')) {
-      try {
-        await api.deleteTask(id);
-        setTasks(tasks.filter((t) => t.id !== id));
-      } catch (error) {
-        console.error('Error deleting task:', error);
-        alert('Failed to delete task');
-      }
-    }
+    showConfirm(
+      'Are you sure you want to delete this task?',
+      async () => {
+        closeModal();
+        try {
+          await api.deleteTask(id);
+          setTasks(tasks.filter((t) => t.id !== id));
+        } catch (error) {
+          console.error('Error deleting task:', error);
+          showAlert('Failed to delete task', 'Error');
+        }
+      },
+      'Delete Task'
+    );
   };
 
   const handleEdit = (task) => {
@@ -194,6 +213,15 @@ function TaskList() {
           })}
         </div>
       )}
+
+      <Modal
+        isOpen={modal.isOpen}
+        onClose={closeModal}
+        onConfirm={modal.onConfirm}
+        title={modal.title}
+        message={modal.message}
+        type={modal.type}
+      />
     </div>
   );
 }
