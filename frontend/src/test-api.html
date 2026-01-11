@@ -1,37 +1,289 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Quick API Test</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Connection Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            color: #4a5568;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+        }
+
+        .api-url {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 30px;
+            font-family: monospace;
+            font-size: 14px;
+            color: #2d3748;
+        }
+
+        .test-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-bottom: 20px;
+        }
+
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .test-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .close-button {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #a0aec0;
+            padding: 5px;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+
+        .close-button:hover {
+            background-color: #f7fafc;
+            color: #4a5568;
+        }
+
+        .modal-content {
+            color: #4a5568;
+            line-height: 1.6;
+        }
+
+        .success {
+            border-left: 4px solid #48bb78;
+            background: #f0fff4;
+            padding: 15px;
+            border-radius: 4px;
+        }
+
+        .error {
+            border-left: 4px solid #f56565;
+            background: #fed7d7;
+            padding: 15px;
+            border-radius: 4px;
+        }
+
+        pre {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
-    <h1>API Test</h1>
-    <button onclick="testAPI()">Test API Connection</button>
-    <div id="result"></div>
+    <div class="container">
+        <h1>🔗 API Connection Test</h1>
+        <div class="api-url">
+            <strong>API Base URL:</strong><br>
+            <span id="apiUrl">http://localhost:3000</span>
+        </div>
+        <button class="test-button" onclick="testAPI()" id="testBtn">
+            🚀 Test API Connection
+        </button>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modal" style="display: none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Test Results</h2>
+                <button class="close-button" onclick="closeModal()">×</button>
+            </div>
+            <div class="modal-content" id="modalContent">
+                <!-- Results will be inserted here -->
+            </div>
+        </div>
+    </div>
 
     <script>
+        const API_BASE_URL = 'http://localhost:3000';
+
+        function showModal(title, content, type = 'info') {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalContent').innerHTML = content;
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+
         async function testAPI() {
-            const resultDiv = document.getElementById('result');
-            resultDiv.innerHTML = 'Testing...';
+            const testBtn = document.getElementById('testBtn');
+            const originalText = testBtn.innerHTML;
+            
+            testBtn.disabled = true;
+            testBtn.innerHTML = '<span class="loading"></span>Testing...';
             
             try {
-                // Test GET
-                const response = await fetch('http://localhost:3000/users');
-                const data = await response.json();
-                resultDiv.innerHTML = `<pre>SUCCESS!\nStatus: ${response.status}\nUsers: ${JSON.stringify(data, null, 2)}</pre>`;
+                let results = '<div class="success"><h3>✅ API Connection Successful!</h3></div>';
                 
-                // Test POST
-                const postResponse = await fetch('http://localhost:3000/users', {
+                // Test GET /users
+                const getResponse = await fetch(`${API_BASE_URL}/users`);
+                const getData = await getResponse.json();
+                
+                results += `
+                    <h4>📋 GET /users</h4>
+                    <p><strong>Status:</strong> ${getResponse.status} ${getResponse.statusText}</p>
+                    <p><strong>Users Found:</strong> ${getData.length}</p>
+                    <pre>${JSON.stringify(getData.slice(0, 3), null, 2)}${getData.length > 3 ? '\n... (showing first 3)' : ''}</pre>
+                `;
+                
+                // Test POST /users
+                const postResponse = await fetch(`${API_BASE_URL}/users`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: 'Test', email: 'test@test.com' })
+                    body: JSON.stringify({ name: 'Test User', email: `test${Date.now()}@example.com` })
                 });
-                const postData = await postResponse.json();
-                resultDiv.innerHTML += `<pre>\nPOST SUCCESS!\nStatus: ${postResponse.status}\nCreated: ${JSON.stringify(postData, null, 2)}</pre>`;
+                
+                let postResults = '';
+                if (postResponse.ok) {
+                    const postData = await postResponse.json();
+                    postResults = `
+                        <h4>➕ POST /users</h4>
+                        <p><strong>Status:</strong> ${postResponse.status} ${postResponse.statusText}</p>
+                        <p><strong>Created User:</strong></p>
+                        <pre>${JSON.stringify(postData, null, 2)}</pre>
+                    `;
+                } else {
+                    const errorData = await postResponse.json().catch(() => ({}));
+                    postResults = `
+                        <h4>❌ POST /users Failed</h4>
+                        <p><strong>Status:</strong> ${postResponse.status} ${postResponse.statusText}</p>
+                        <pre>${JSON.stringify(errorData, null, 2)}</pre>
+                    `;
+                }
+                
+                results += postResults;
+                
+                showModal('API Test Results', results);
                 
             } catch (error) {
-                resultDiv.innerHTML = `<pre style="color: red;">ERROR: ${error.message}\n${error.stack}</pre>`;
+                const errorContent = `
+                    <div class="error">
+                        <h3>❌ Connection Failed</h3>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p>Please ensure the backend server is running on <code>${API_BASE_URL}</code></p>
+                        <details>
+                            <summary>Technical Details</summary>
+                            <pre>${error.stack}</pre>
+                        </details>
+                    </div>
+                `;
+                showModal('API Test Failed', errorContent);
+            } finally {
+                testBtn.disabled = false;
+                testBtn.innerHTML = originalText;
             }
         }
+
+        // Initialize
+        document.getElementById('apiUrl').textContent = API_BASE_URL;
     </script>
 </body>
 </html>
