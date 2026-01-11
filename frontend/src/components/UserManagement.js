@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
+import Modal from './Modal';
 
 function UserManagement() {
   const [users, setUsers] = useState([]);
@@ -11,6 +12,19 @@ function UserManagement() {
     email: '',
   });
   const [formLoading, setFormLoading] = useState(false);
+  const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null });
+
+  const showAlert = (message, title = 'Message') => {
+    setModal({ isOpen: true, title, message, type: 'alert', onConfirm: null });
+  };
+
+  const showConfirm = (message, onConfirm, title = 'Confirm') => {
+    setModal({ isOpen: true, title, message, type: 'confirm', onConfirm });
+  };
+
+  const closeModal = () => {
+    setModal({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null });
+  };
 
   useEffect(() => {
     fetchUsers();
@@ -23,7 +37,7 @@ function UserManagement() {
       setUsers(response.data);
     } catch (error) {
       console.error('Error fetching users:', error);
-      alert('Failed to load users');
+      showAlert('Failed to load users', 'Error');
     } finally {
       setLoading(false);
     }
@@ -47,22 +61,27 @@ function UserManagement() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this user? This will also delete all their projects and tasks.')) {
-      try {
-        await api.deleteUser(id);
-        setUsers(users.filter((u) => u.id !== id));
-      } catch (error) {
-        console.error('Error deleting user:', error);
-        alert('Failed to delete user');
-      }
-    }
+    showConfirm(
+      'Are you sure you want to delete this user? This will also delete all their projects and tasks.',
+      async () => {
+        closeModal();
+        try {
+          await api.deleteUser(id);
+          setUsers(users.filter((u) => u.id !== id));
+        } catch (error) {
+          console.error('Error deleting user:', error);
+          showAlert('Failed to delete user', 'Error');
+        }
+      },
+      'Delete User'
+    );
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!formData.name.trim() || !formData.email.trim()) {
-      alert('Please fill in all fields');
+      showAlert('Please fill in all fields', 'Validation Error');
       return;
     }
 
@@ -85,7 +104,7 @@ function UserManagement() {
       fetchUsers();
     } catch (error) {
       console.error('Error saving user:', error);
-      alert(error.response?.data?.message || 'Failed to save user');
+      showAlert(error.response?.data?.message || 'Failed to save user', 'Error');
     } finally {
       setFormLoading(false);
     }
@@ -211,6 +230,15 @@ function UserManagement() {
           </table>
         )}
       </div>
+
+      <Modal
+        isOpen={modal.isOpen}
+        onClose={closeModal}
+        onConfirm={modal.onConfirm}
+        title={modal.title}
+        message={modal.message}
+        type={modal.type}
+      />
     </div>
   );
 }
